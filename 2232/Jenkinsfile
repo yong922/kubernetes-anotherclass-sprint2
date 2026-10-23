@@ -74,13 +74,16 @@ pipeline {
 
                     // 도커 로그인
                     withCredentials([usernamePassword(credentialsId: 'docker_password', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-                        sh "echo " + '${PASSWORD}' + " | docker login -u " + '${USERNAME}' + " --password-stdin"
+                        retry(3) {   // 변경: 실패하면 최대 3번까지 다시 시도
+                            sh "echo " + '${PASSWORD}' + " | docker login -u " + '${USERNAME}' + " --password-stdin"
+                        }
                     }
 
                     // 도커 빌드 및 업로드
                     sh "docker build ./${CLASS_NUM}/build/docker -t ${DOCKERHUB_USERNAME}/api-tester:${TAG}"
-                    sh "docker push ${DOCKERHUB_USERNAME}/api-tester:${TAG}"
-
+                    retry(3) {   // 변경: 실패하면 최대 3번까지 다시 시도
+                        sh "docker push ${DOCKERHUB_USERNAME}/api-tester:${TAG}"
+                    }
                     // 도커 이미지 삭제
                     sh "docker rmi ${DOCKERHUB_USERNAME}/api-tester:${TAG}"
                 }
